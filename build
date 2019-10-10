@@ -1,0 +1,33 @@
+#!/usr/bin/python3
+
+import os, sys, glob, time
+
+with open("buildconfig.txt") as f: exec(f.read())
+
+os.chdir("src")
+files = glob.glob("*.cpp")
+for i in range(len(files)):
+  txt = list(files[i])
+  for j in range(4): txt.pop(len(txt) - 1)
+  files[i] = "".join(txt)
+
+try:
+  if sys.platform.startswith("linux"): compDir = "linux"
+  elif sys.platform.startswith("win32"): compDir = "windows"
+  os.mkdir(compDir)
+except FileExistsError: pass
+for i in files:
+  compile = 1
+  if os.path.exists("".join([compDir, "/", i, ".o"])):
+    if not os.path.getmtime("".join([compDir, "/", i, ".o"])) < os.path.getmtime("".join([i, ".cpp"])): compile = 0
+  if compile:
+    print("Compiling %s.cpp" % i)
+    if sys.platform.startswith("linux"): compCmd = "g++ -c %s.cpp %s -o ./%s/%s.o" % (i, compilerFlags, compDir, i)
+    elif sys.platform.startswith("win32"): compCmd = "g++ -c -IZ:\\dev\\texel\\sdl2\\include %s.cpp %s -o ./%s/%s.o" % (i, compilerFlags, compDir, i)
+    if os.system(compCmd): sys.exit(1)
+os.chdir("../")
+if sys.platform.startswith("linux"): linkCmd = "g++ src/%s/*.o -Llib -lSDL2 -lSDL2_image -lSDL2_mixer -o %s" % (compDir, exeName)
+elif sys.platform.startswith("win32"): linkCmd = "g++ src/%s/*.o winstuff.res -LZ:\\dev\\texel\\sdl2\\lib\\windows -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_mixer -o %s" % (compDir, exeName)
+os.system(linkCmd)
+
+os.chdir("../")
