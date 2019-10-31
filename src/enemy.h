@@ -94,7 +94,7 @@ class Shark {
     void setInfo(SharkInfo newInfo) {info = newInfo;}
 };
 
-void enemyLoadRes(Window&);
+bool enemyLoadRes(Window&);
 void enemyFreeRes();
 
 #endif

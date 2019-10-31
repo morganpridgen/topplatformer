@@ -21,7 +21,7 @@ struct Tile {
   Hitbox all;
 };
 
-void terrainLoadRes(Window&);
+bool terrainLoadRes(Window&);
 void unloadTerrain();
 StartPos loadLevel(char*, int);
 Tile *terrainAt(short, short);

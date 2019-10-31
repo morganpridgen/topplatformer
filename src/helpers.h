@@ -62,8 +62,8 @@ class Particle {
     void render(Window&, Camera, bool);
 };
 
-void addParticle(Particle*[particleCount], ParticleInfo, bool);
-void addParticle(Particle*[particleCount], ParticleInfo);
+void addParticle(Particle **, ParticleInfo, bool);
+void addParticle(Particle **, ParticleInfo);
 
 bool loadFonts();
 void unloadFonts();

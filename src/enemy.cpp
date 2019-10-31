@@ -193,13 +193,20 @@ void Shark::render(Window& win, Camera cam, bool simpleEffects) {
   }
 }
 
-void enemyLoadRes(Window& win) {
+bool enemyLoadRes(Window& win) {
   triImg = loadTexture(pathForData("imgs/enemy.png"), win);
+  if (!triImg) return 0;
   badFishImg = loadTexture(pathForData("imgs/badfish.png"), win);
+  if (!badFishImg) return 0;
   badFishProjImg = loadTexture(pathForData("imgs/badfishshot.png"), win);
+  if (!badFishProjImg) return 0;
   sharkImg = loadTexture(pathForData("imgs/shark.png"), win);
+  if (!sharkImg) return 0;
   splash = Mix_LoadWAV(pathForData("sfx/splash.wav"));
+  if (!splash) return 0;
   laser = Mix_LoadWAV(pathForData("sfx/shot.wav"));
+  if (!laser) return 0;
+  return 1;
 }
 
 void enemyFreeRes() {

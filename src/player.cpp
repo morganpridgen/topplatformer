@@ -49,17 +49,27 @@ void Player::end() {
   if (burn) Mix_FreeChunk(burn);
 }
 
-void Player::init(Window& win, bool heavyRumble) {
+bool Player::init(Window& win, bool heavyRumble) {
   img = loadTexture(pathForData("imgs/player/player.png"), win);
+  if (!img) return 0;
   face = loadTexture(pathForData("imgs/player/face.png"), win);
+  if (!face) return 0;
   jump = Mix_LoadWAV(pathForData("sfx/jump.wav"));
+  if (!jump) return 0;
   bump = Mix_LoadWAV(pathForData("sfx/bump.wav"));
+  if (!bump) return 0;
   splash = Mix_LoadWAV(pathForData("sfx/splash.wav"));
+  if (!splash) return 0;
   screenFinish = Mix_LoadWAV(pathForData("sfx/screenfinish.wav"));
+  if (!screenFinish) return 0;
   jump2 = Mix_LoadWAV(pathForData("sfx/jump2.wav"));
+  if (!jump2) return 0;
   dash = Mix_LoadWAV(pathForData("sfx/dash.wav"));
+  if (!dash) return 0;
   burn = Mix_LoadWAV(pathForData("sfx/burn.wav"));
+  if (!burn) return 0;
   hRumble = heavyRumble;
+  return 1;
 }
 
 int Player::update(Controller* ctrl, bool assist, Particle *particles[particleCount], Enemy *enemies[enemyCount], BadFish *badFish[badFishCount], Shark *sharks[sharkCount]) {
@@ -418,7 +428,7 @@ void Player::render(Window &win, Camera cam, Controller *ctrl, bool simpleEffect
   SDL_Rect rect;
   if (layer == 0 && ((!info.onGround) || info.flyAnim)) {
     Tile *tileInfo = terrainAt(info.x, info.z);
-    bool shadowDown = tileInfo->type == 2 || tileInfo->type == 16;
+    bool shadowDown = tileInfo->type == 2;
     delete tileInfo;
     setColorFromPalette(win, 1);
     if (nP(simpleEffects)) {

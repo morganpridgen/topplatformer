@@ -18,7 +18,7 @@
 
 int rngVal = 0;
 unsigned long timer = 0;
-bool managingParticle = 0;
+volatile bool managingParticle = 0;
 
 unsigned short rng() {
   unsigned short s0 = (unsigned char)rngVal << 8;
@@ -111,7 +111,7 @@ void Particle::render(Window &win, Camera cam, bool simpleEffects) {
   }
 }
 
-void addParticle(Particle *particles[particleCount], ParticleInfo newInfo, bool shiny) {
+void addParticle(Particle **particles, ParticleInfo newInfo, bool shiny) {
   while (managingParticle);
   managingParticle = 1;
   for (int i = 0; i < particleCount; i++) {
@@ -125,7 +125,7 @@ void addParticle(Particle *particles[particleCount], ParticleInfo newInfo, bool 
   managingParticle = 0;
 }
 
-void addParticle(Particle *particles[particleCount], ParticleInfo newInfo) {
+void addParticle(Particle **particles, ParticleInfo newInfo) {
   addParticle(particles, newInfo, 0);
 }
 
@@ -134,9 +134,12 @@ SDL_Surface *fontBig = nullptr;
 
 bool loadFonts() {
   fontSmall = IMG_Load(pathForData("font14.png"));
+  if (!fontSmall) return 0;
   fontBig = IMG_Load(pathForData("font22.png"));
+  if (!fontBig) return 0;
   SDL_ConvertSurfaceFormat(fontSmall, SDL_PIXELFORMAT_RGBA32, 0);
   SDL_ConvertSurfaceFormat(fontBig, SDL_PIXELFORMAT_RGBA32, 0);
+  return 1;
 }
 
 void unloadFonts() {
@@ -326,15 +329,15 @@ void initPaths() {
 }
 
 char *pathForData(const char *file) {
-  static char out[64];
-  memset(out, 0, 64);
+  static char out[128];
+  memset(out, 0, sizeof(out));
   sprintf(out, "%s/%s", dataPath, file);
   return out;
 }
 
 char *pathForSaves(const char *file) {
-  static char out[64];
-  memset(out, 0, 64);
+  static char out[128];
+  memset(out, 0, sizeof(out));
   sprintf(out, "%s/%s", savePath, file);
   return out;
 }

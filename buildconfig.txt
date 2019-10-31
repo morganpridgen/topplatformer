@@ -1,0 +1,2 @@
+compilerFlags = "-O2"
+exeName = "topplatformer"

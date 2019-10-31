@@ -1,8 +1,8 @@
 #include "terrain.h"
 #include <cmath>
-#include <fstream>
-#include <string>
-#include <sstream>
+#include <cstdlib>
+#include <cstring>
+#include <climits>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
@@ -71,27 +71,25 @@ void setType(int x, int z, int type) {
   *(terrain + z * levelW + x) = type;
 }
 
-void terrainLoadRes(Window &win) {
-  /*barrier = loadTexture("res/imgs/barrier.png", win);
-  water = loadTexture("res/imgs/water.png", win);
-  ground = loadTexture("res/imgs/ground.png", win);
-  goal = loadTexture("res/imgs/goal.png", win);
-  magnet = loadTexture("res/imgs/magnet.png", win);
-  fire = loadTexture("res/imgs/fire.png", win);
-  fakeBarrier = loadTexture("res/imgs/fakebarrier.png", win);*/
+bool terrainLoadRes(Window &win) {
   fishImg = loadTexture(pathForData("imgs/fish.png"), win);
+  if (!fishImg) return 0;
   char *paths[] = {"imgs/barrier.png", "imgs/ground.png", "imgs/water.png", "imgs/goal.png", "imgs/fakebarrier.png", "imgs/fire.png", "imgs/switch.png", "imgs/switchblock.png", "imgs/fan.png"};
   SDL_Surface *tmpImg = SDL_CreateRGBSurfaceWithFormat(0, 256, 512, 32, SDL_PIXELFORMAT_RGBA32);
   for (int i = 0; i < 9; i++) {
     SDL_Rect rect = {0, 32 * i, 32, 32};
     SDL_Surface *in = IMG_Load(pathForData(paths[i]));
+    if (!in) return 0;
     SDL_BlitSurface(in, NULL, tmpImg, &rect);
     SDL_FreeSurface(in);
   }
   terrainImg = SDL_CreateTextureFromSurface(win.getRender(), tmpImg);
   SDL_FreeSurface(tmpImg);
   switchPing = Mix_LoadWAV(pathForData("sfx/switchping.wav"));
+  if (!switchPing) return 0;
   switchPong = Mix_LoadWAV(pathForData("sfx/switchpong.wav"));
+  if (!switchPong) return 0;
+  return 1;
 }
 
 void unloadTerrain() {
@@ -118,19 +116,21 @@ StartPos loadLevel(char *name, int screenNum) {
   setSwitch(0, 1);
   clockDisable = 0;
   fbAngle = 0;
-  std::fstream data;
-  std::stringstream path;
-  path << "levels/" << name << "/screen" << int(screenNum) << ".json";
-  data.open(pathForData(path.str().c_str()), std::ios::in);
-  if (data) {
-    data.seekg(0, data.end);
-    int length = data.tellg() + 1L;
-    data.seekg(0, data.beg);
+  FILE *file;
+  char path[32];
+  memset(path, 0, sizeof(path));
+  sprintf(path, "levels/%s/screen%i.json", name, int(screenNum));
+  file = fopen(pathForData(path), "r");
+  if (file) {
+    fseek(file, 0, SEEK_END);
+    int length = ftell(file) + 1L;
+    fseek(file, 0, SEEK_SET);
     char *buffer = new char[length];
     memset(buffer, 0, length);
-    data.read(buffer, length);
-    data.close();
+    fread(buffer, length, 1, file);
+    fclose(file);
     jTerrain = json::parse(buffer);
+    delete [] buffer;
     for (int i = 0; i < levelH; i++) {
       for (int j = 0; j < levelW; j++) {
         terrain[i * levelW + j] = int(jTerrain["layout"][i][j]);
@@ -141,17 +141,17 @@ StartPos loadLevel(char *name, int screenNum) {
     return start;
   } else {
     #if LVL_Enabled == 1
-      std::stringstream newPath;
-      newPath << "levels/" << name << "/screen" << int(screenNum) << ".lvl";
-      data.open(pathForData(newPath.str().c_str()), std::ios::in | std::ios::binary);
-      if (data) {
-        data.seekg(0, data.end);
-        int length = data.tellg() + 1L;
-        data.seekg(0, data.beg);
+      memset(path, 0, sizeof(path));
+      sprintf(path, "levels/%s/screen%i.lvl", name, int(screenNum));
+      file = fopen(pathForData(path), "rb");
+      if (file) {
+        fseek(file, 0, SEEK_END);
+        int length = ftell(file) + 1L;
+        fseek(file, 0, SEEK_SET);
         char *buffer = new char[length];
         memset(buffer, 0, length);
-        data.read(buffer, length);
-        data.close();
+        fread(buffer, length, 1, file);
+        fclose(file);
         if (buffer[0] != 'C' || buffer[1] != 'M') {
           StartPos start = {0, 0, 0};
           return start;
@@ -166,6 +166,7 @@ StartPos loadLevel(char *name, int screenNum) {
             terrain[i * levelW + j] = palette[buffer[i * levelW + j + 12]];
           }
         }
+        delete [] buffer;
         genFish();
         return start;
       } else {
@@ -206,7 +207,7 @@ void updateTerrain(Player &ply, bool inWater, Particle *particles[particleCount]
   int tileX;
   int tileZ;
   int dist = 0;
-  int minDist = -1;
+  int minDist = INT_MAX;
   int maxDist = -1;
   EnemyInfo newEInfo;
   BadFishInfo newBInfo;
@@ -315,6 +316,9 @@ void updateTerrain(Player &ply, bool inWater, Particle *particles[particleCount]
             switchClock++;
             if (switchClock % 64 == 0) setSwitch(!switchState);
           }
+          break;
+        case 16:
+          addParticle(particles, {j * 256 - worldSizeX + (rng() % 256), -1, i * 256 - worldSizeZ + (rng() % 256), 0, -16, 0, rng() % 2 + 2}, 0);
           break;
         case 17: {
           if (pInfo.flyAnim) break;
@@ -488,7 +492,7 @@ void renderTerrain(Window &win, Camera cam, Player &ply, bool simpleEffects, cha
           clip.y = 64;
           clip.x = ((getTimer() / 4) % 4) * 32;
           SDL_RenderCopy(win.getRender(), terrainImg, &clip, &rect);
-          if (typeAt(j, i - 1) == 2 || typeAt(j, i - 1) == 16) break;
+          if (typeAt(j, i - 1) == 2) break;
           SDL_Rect newRect = {rect.x, rect.y - 8 * win.info.hRatio, 32 * win.info.wRatio, 8 * win.info.hRatio};
           SDL_Rect newClip = {128, ((getTimer() / 16) % 4) * 8 + 64, 32, 8};
           SDL_RenderCopy(win.getRender(), terrainImg, &newClip, &newRect);
@@ -617,7 +621,7 @@ void renderTerrain(Window &win, Camera cam, Player &ply, bool simpleEffects, cha
           SDL_RenderCopy(win.getRender(), terrainImg, &clip, &rect);
           break;
         case 16: {
-          if (layer != -1) break;
+          if (layer) break;
           clip.y = 256;
           SDL_RenderCopy(win.getRender(), terrainImg, &clip, &rect);
           clip.x = 32 + 32 * ((getTimer() / 2) % 4);
@@ -709,22 +713,28 @@ void renderTerrain(Window &win, Camera cam, Player &ply, bool simpleEffects, cha
 
 LevelScores getScoresForLevel(char levelName[64]) {
   LevelScores out = {'x', 359999, 0, 0, 1};
-  std::fstream data;
-  std::stringstream path;
-  path << levelName << ".sav";
-  data.open(pathForSaves(path.str().c_str()), std::ios::in | std::ios::binary);
-  if (data) data.read((char*)&out, sizeof(out));
-  data.close();
+  FILE *file;
+  char path[16];
+  memset(path, 0, sizeof(path));
+  sprintf(path, "%s.sav", levelName);
+  file = fopen(pathForSaves(path), "rb");
+  if (file) {
+    fread(&out, sizeof(out), 1, file);
+    fclose(file);
+  }
   return out;
 }
 
 void setScoresForLevel(char levelName[64], LevelScores save) {
-  std::fstream data;
-  std::stringstream path;
-  path << levelName << ".sav";
-  data.open(pathForSaves(path.str().c_str()), std::ios::out | std::ios::binary);
-  if (data) data.write((char*)&save, sizeof(save));
-  data.close();
+  FILE *file;
+  char path[16];
+  memset(path, 0, sizeof(path));
+  sprintf(path, "%s.sav", levelName);
+  file = fopen(pathForSaves(path), "wb");
+  if (file) {
+    fwrite(&save, sizeof(save), 1, file);
+    fclose(file);
+  }
 }
 
 void Fish::update(Player *ply) {

@@ -43,7 +43,7 @@ class Player {
   public:
     Hitbox box;
     Player();
-    void init(Window&, bool);
+    bool init(Window&, bool);
     int update(Controller*, bool, Particle*[particleCount], Enemy*[enemyCount], BadFish*[badFishCount], Shark*[sharkCount]);
     void render(Window&, Camera, Controller*, bool, char);
     void end();

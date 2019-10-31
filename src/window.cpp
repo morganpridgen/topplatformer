@@ -149,7 +149,7 @@ void Window::update() {
     SDL_SetRenderTarget(renderer, NULL);
     SDL_RenderCopy(renderer, winTexture, NULL, NULL);
   }*/
-  if (nP(isScreenshot)) {
+  /*if (nP(isScreenshot)) {
     SDL_Surface *screenshotImg = SDL_CreateRGBSurface(0, info.w, info.h, 32, 0, 0, 0, 0);
     SDL_RenderReadPixels(renderer, NULL, screenshotImg->format->format, screenshotImg->pixels, screenshotImg->pitch);
     IMG_SavePNG(screenshotImg, pathForSaves("screenshot.png"));
@@ -158,7 +158,7 @@ void Window::update() {
     SDL_RenderCopy(renderer, winTexture, NULL, NULL);
     SDL_DestroyTexture(winTexture);
     isScreenshot = 0;
-  }
+  }*/
   SDL_RenderPresent(renderer);
   SDL_RenderSetViewport(renderer, &info.screenRect);
   SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
