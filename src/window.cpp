@@ -66,10 +66,10 @@ bool Window::makeScreen(int resX, int resY, char name[], bool fullscreen, bool v
   if (vsync) flags |= SDL_RENDERER_PRESENTVSYNC;
   renderer = SDL_CreateRenderer(display, -1, flags);
   if (!renderer) {
-    const char *error = SDL_GetError();
+    SDL_Log("Unable to create new renderer. (%s)", SDL_GetError());
     renderer = SDL_GetRenderer(display);
     if (!renderer) {
-      SDL_Log("[ERROR] SDL couldn't get a renderer from the window. (%s), (%s)\n", error, SDL_GetError());
+      SDL_Log("[ERROR] SDL couldn't get a renderer from the window. (%s)\n", SDL_GetError());
       return 0;
     }
   }
@@ -145,6 +145,8 @@ void Window::setLowRender(bool lowRender) {
 }
 
 void Window::update() {
+  SDL_SetRenderDrawColor(renderer, 0x00, 0x00, 0x00, 0xFF);
+  SDL_RenderDrawPoint(renderer, 0, 0);
   /*if (toTexture) {
     SDL_SetRenderTarget(renderer, NULL);
     SDL_RenderCopy(renderer, winTexture, NULL, NULL);
